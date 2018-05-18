@@ -71,13 +71,39 @@ void debug_uint (u4_t v) {
 }
 
 void debug_str (const u1_t* str) {
-    printf(str);
+    while(*str) {
+        debug_char(*str++);
+    }
 }
 
 void debug_event (int ev) {
-
+    static const char* evnames[] = {
+        [EV_SCAN_TIMEOUT]   = "SCAN_TIMEOUT",
+        [EV_BEACON_FOUND]   = "BEACON_FOUND",
+        [EV_BEACON_MISSED]  = "BEACON_MISSED",
+        [EV_BEACON_TRACKED] = "BEACON_TRACKED",
+        [EV_JOINING]        = "JOINING",
+        [EV_JOINED]         = "JOINED",
+        [EV_RFU1]           = "RFU1",
+        [EV_JOIN_FAILED]    = "JOIN_FAILED",
+        [EV_REJOIN_FAILED]  = "REJOIN_FAILED",
+        [EV_TXCOMPLETE]     = "TXCOMPLETE",
+        [EV_LOST_TSYNC]     = "LOST_TSYNC",
+        [EV_RESET]          = "RESET",
+        [EV_RXCOMPLETE]     = "RXCOMPLETE",
+        [EV_LINK_DEAD]      = "LINK_DEAD",
+        [EV_LINK_ALIVE]     = "LINK_ALIVE",
+        [EV_SCAN_FOUND]     = "SCAN_FOUND",
+        [EV_TXSTART]        = "EV_TXSTART",
+    };
+    debug_str((ev < sizeof(evnames)/sizeof(evnames[0])) ? evnames[ev] : "EV_UNKNOWN" );
+    debug_char('\r');
+    debug_char('\n');
 }
 
 void debug_val (const u1_t* label, u4_t val) {
-	printf("%s%d\r\n", label, val);
+	debug_str(label);
+    debug_uint(val);
+    debug_char('\r');
+    debug_char('\n');
 }
