@@ -26,6 +26,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "lmic.h"
+
 #include <oslmic.h>
 #include <p24Fxxxx.h>
 #include <libpic30.h>
@@ -43,7 +45,7 @@ void debug_init () {
 }
 
 void debug_led (u1_t val) {
-    LED1 = val;
+    //LED1 = val;
 }
 
 void debug_char (u1_t c) {
