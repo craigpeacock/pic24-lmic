@@ -85,7 +85,9 @@ void hal_init () {
     //***************************
     RPINR18bits.U1RXR = 23;     // U1_RX Input = RP23/RD2
     RPINR20bits.SDI1R = 0;      // SDI1 Input = RP0/RB0
-    //RPINR0bits.INT1R = 12;  
+    RPINR0bits.INT1R = 18;      // DIO0 Input = RP18/RB5
+    RPINR1bits.INT2R = 8;       // DIO1 Input = RP8/RB8
+    RPINR1bits.INT3R = 9;       // DIO2 Input = RP9/RB9
     //***************************
     // Configure Output Functions
     // (See Table 10-3)
@@ -108,7 +110,7 @@ void hal_init () {
     U1BRG = 38;             	// Baud Rate 12MHz/2/(16*9600BPS) - 1
     U1MODEbits.UARTEN = 1;		// Enable UART
   
-    AD1PCFG = 0xFF; 			// All analog pins are in Digital Mode.
+    AD1PCFG = 0xFFFF; 			// All analog pins are in Digital Mode.
     
     // Set up SPI - 6MHz Clock
     // The SX1276 has a 10MHz Maximum SPI Clock. CPOL=0, CPHA = 0;
@@ -125,7 +127,7 @@ void hal_init () {
     
     TRISBbits.TRISB3 = 0;       // NSS Output
     TRISBbits.TRISB4 = 0;       // RESET Output
-    
+  
     // Configure Timer 1
     tmr_ticks = 0;
     T1CON = 0;      			// Stop TMR1 and reset control register
@@ -139,6 +141,17 @@ void hal_init () {
     T1CONbits.TCS = 0; 			// Source: Internal clock (FOSC/2)
     T1CONbits.TON = 1; 			// Start the Timer
 
+    // Configure Interrupts
+    INTCON2bits.INT1EP = 0;     // Interrupt on positive edge (DIO0)
+    INTCON2bits.INT2EP = 0;     // Interrupt on positive edge (DIO1)
+    INTCON2bits.INT3EP = 0;     // Interrupt on positive edge (DIO2)
+    IFS1bits.INT1IF = 0;        // Clear Flag
+    IFS1bits.INT2IF = 0;        // Clear Flag
+    IFS3bits.INT3IF = 0;        // Clear Flag
+    IEC1bits.INT1IE = 1;        // Enable Interrupt
+    IEC1bits.INT2IE = 1;        // Enable Interrupt
+    IEC3bits.INT3IE = 1;        // Enable Interrupt
+    
     printf("PIC24F LMiC Hal Core Initialised\r\n");
     
 }
@@ -185,9 +198,24 @@ void hal_pin_rst (u1_t val) {
 // interrupt on the rising edge and the corresponding interrupt handlers must 
 // invoke the function radio_irq_handler() and pass the line which generated 
 // the interrupt as argument (0, 1, 2).
-//void radio_irq_handler (u1_t dio) {
-//}
 
+void __attribute__((interrupt, no_auto_psv)) _INT1Interrupt(void)
+{
+    radio_irq_handler(0);
+    IFS1bits.INT1IF = 0;
+}
+
+void __attribute__((interrupt, no_auto_psv)) _INT2Interrupt(void)
+{
+    radio_irq_handler(1);
+    IFS1bits.INT2IF = 0;
+}
+
+void __attribute__((interrupt, no_auto_psv)) _INT3Interrupt(void)
+{
+    radio_irq_handler(2);
+    IFS3bits.INT3IF = 0;
+}
 
 // Perform 8-bit SPI transaction. Write given byte outval to radio, read byte 
 // from radio and return value.
@@ -202,13 +230,12 @@ u1_t hal_spi (u1_t outval) {
 
 // Return 32-bit system time in ticks.
 u4_t hal_ticks () {
-    //printf("%09d HAL: hal_ticks()\r\n",tmr_ticks);
     return(tmr_ticks);
 }
 
 // Busy-wait until specified timestamp (in ticks) is reached.
 void hal_waitUntil (u4_t time) {
-    //printf("%08X HAL: Wait until %08X ms\r\n", tmr_ticks, time);
+    while (time < tmr_ticks);
 }
 
 // Check and rewind timer for given targettime. Return 1 if targettime is close 
@@ -217,7 +244,6 @@ void hal_waitUntil (u4_t time) {
 // when targettime is reached is that the CPU wakes up from possible sleep 
 // states.
 u1_t hal_checkTimer (u4_t targettime) {
-    //printf("%08X HAL: hal_checkTimer(%08X)\r\n",tmr_ticks, targettime);
     
     s4_t diff_ticks = targettime - tmr_ticks;
     
